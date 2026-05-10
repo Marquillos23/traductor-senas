@@ -1,5 +1,5 @@
-echo flask > requirements.txt
-echo opencv-python-headless >> requirements.txt
-echo mediapipe >> requirements.txt
-echo scikit-learn >> requirements.txt
-echo numpy >> requirements.txt
+flask
+opencv-python-headless
+mediapipe
+scikit-learn
+numpy
