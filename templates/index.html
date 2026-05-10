@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traductor de Señas</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0f0f0f;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background: #1a1a2e;
+            padding: 16px;
+            text-align: center;
+            border-bottom: 2px solid #00ff88;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            color: #00ff88;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            gap: 16px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .camara-box {
+            position: relative;
+            border: 3px solid #00ff88;
+            border-radius: 12px;
+            overflow: hidden;
+            width: 100%;
+            box-shadow: 0 0 30px rgba(0,255,136,0.2);
+        }
+
+        .camara-box img {
+            width: 100%;
+            display: block;
+        }
+
+        .live-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: red;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .live-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: parpadeo 1s infinite;
+        }
+
+        @keyframes parpadeo {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .info-panel {
+            width: 100%;
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #333;
+        }
+
+        .info-panel h2 {
+            color: #00ff88;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .manos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mano-card {
+            background: #0f0f0f;
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #333;
+            text-align: center;
+        }
+
+        .mano-card .lado {
+            font-size: 0.75rem;
+            color: #00bfff;
+            margin-bottom: 6px;
+        }
+
+        .mano-card .seña {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .mano-card .confianza {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-top: 4px;
+        }
+
+        .barra {
+            width: 100%;
+            background: #333;
+            border-radius: 10px;
+            height: 6px;
+            margin-top: 8px;
+        }
+
+        .barra-fill {
+            height: 6px;
+            background: #00ff88;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 16px;
+            color: #555;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🤟 TRADUCTOR DE SEÑAS</h1>
+    <p>Detección en tiempo real con IA</p>
+</header>
+
+<div class="container">
+
+    <div class="camara-box">
+        <img src="/video" alt="Camara en vivo">
+        <div class="live-badge">EN VIVO</div>
+    </div>
+
+    <div class="info-panel">
+        <h2>📊 DETECCIÓN ACTUAL</h2>
+        <div class="manos-grid">
+            <div class="mano-card">
+                <div class="lado">LEFT / IZQUIERDA 🤚</div>
+                <div class="seña" id="seña-izq">—</div>
+                <div class="confianza" id="conf-izq">Sin detección</div>
+                <div class="barra"><div class="barra-fill" id="barra-izq" style="width:0%"></div></div>
+            </div>
+            <div class="mano-card">
+                <div class="lado">RIGHT / DERECHA 🤚</div>
+                <div class="seña" id="seña-der">—</div>
+                <div class="confianza" id="conf-der">Sin detección</div>
+                <div class="barra"><div class="barra-fill" id="barra-der" style="width:0%"></div></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer>Proyecto de Titulación — Traductor LSM con IA</footer>
+
+<script>
+    // Actualizar info de detección cada 500ms
+    setInterval(() => {
+        fetch('/deteccion')
+            .then(r => r.json())
+            .then(data => {
+                // Izquierda
+                if (data.izquierda) {
+                    document.getElementById('seña-izq').textContent = data.izquierda.seña;
+                    document.getElementById('conf-izq').textContent = data.izquierda.confianza + '%';
+                    document.getElementById('barra-izq').style.width = data.izquierda.confianza + '%';
+                } else {
+                    document.getElementById('seña-izq').textContent = '—';
+                    document.getElementById('conf-izq').textContent = 'Sin detección';
+                    document.getElementById('barra-izq').style.width = '0%';
+                }
+                // Derecha
+                if (data.derecha) {
+                    document.getElementById('seña-der').textContent = data.derecha.seña;
+                    document.getElementById('conf-der').textContent = data.derecha.confianza + '%';
+                    document.getElementById('barra-der').style.width = data.derecha.confianza + '%';
+                } else {
+                    document.getElementById('seña-der').textContent = '—';
+                    document.getElementById('conf-der').textContent = 'Sin detección';
+                    document.getElementById('barra-der').style.width = '0%';
+                }
+            });
+    }, 500);
+</script>
+
+</body>
+</html>
