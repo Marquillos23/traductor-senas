@@ -145,10 +145,11 @@ const ctx = canvas.getContext('2d');
 const hands = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
 hands.setOptions({
     maxNumHands: 2,
-    modelComplexity: 1,
+    modelComplexity: 0,  // 0 es más rápido que 1
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5
 });
+
 
 hands.onResults(async (results) => {
     canvas.width = video.videoWidth;
@@ -237,18 +238,36 @@ function dibujarEtiqueta(lm, seña, confianza) {
     ctx.fillText(texto, x1 + 5, y1 - 8);
 }
 
-// Iniciar cámara
-navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false})
-    .then(stream => {
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
-            const camera = new Camera(video, {
-                onFrame: async () => { await hands.send({image: video}); },
-                width: 640, height: 480
-            });
-            camera.start();
-        };
-    });
+// Control de FPS para no saturar el servidor
+let procesando = false;
+let ultimoProceso = 0;
+const FPS_LIMITE = 10; // frames por segundo
+
+navigator.mediaDevices.getUserMedia({
+    video: {
+        facingMode: 'user',
+        width: { ideal: 320 },
+        height: { ideal: 240 }
+    },
+    audio: false
+}).then(stream => {
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+        const camera = new Camera(video, {
+            onFrame: async () => {
+                const ahora = Date.now();
+                if (procesando) return;
+                if (ahora - ultimoProceso < 1000 / FPS_LIMITE) return;
+                procesando = true;
+                ultimoProceso = ahora;
+                await hands.send({image: video});
+                procesando = false;
+            },
+            width: 320, height: 240
+        });
+        camera.start();
+    };
+});
 </script>
 </body>
 </html>
