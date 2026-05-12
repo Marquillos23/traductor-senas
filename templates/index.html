@@ -4,19 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traductor de Señas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             background: #0f0f0f;
             color: white;
             font-family: 'Segoe UI', sans-serif;
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
-
         header {
             width: 100%;
             background: #1a1a2e;
@@ -24,29 +25,17 @@
             text-align: center;
             border-bottom: 2px solid #00ff88;
         }
-
-        header h1 {
-            font-size: 1.5rem;
-            color: #00ff88;
-            letter-spacing: 2px;
-        }
-
-        header p {
-            font-size: 0.8rem;
-            color: #aaa;
-            margin-top: 4px;
-        }
-
+        header h1 { font-size: 1.5rem; color: #00ff88; letter-spacing: 2px; }
+        header p { font-size: 0.8rem; color: #aaa; margin-top: 4px; }
         .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
             gap: 16px;
             width: 100%;
-            max-width: 800px;
+            max-width: 640px;
         }
-
         .camara-box {
             position: relative;
             border: 3px solid #00ff88;
@@ -55,12 +44,10 @@
             width: 100%;
             box-shadow: 0 0 30px rgba(0,255,136,0.2);
         }
-
-        .camara-box img {
+        canvas {
             width: 100%;
             display: block;
         }
-
         .live-badge {
             position: absolute;
             top: 12px;
@@ -75,21 +62,17 @@
             align-items: center;
             gap: 6px;
         }
-
         .live-badge::before {
             content: '';
-            width: 8px;
-            height: 8px;
+            width: 8px; height: 8px;
             background: white;
             border-radius: 50%;
             animation: parpadeo 1s infinite;
         }
-
         @keyframes parpadeo {
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
-
         .info-panel {
             width: 100%;
             background: #1a1a2e;
@@ -97,20 +80,12 @@
             padding: 16px;
             border: 1px solid #333;
         }
-
-        .info-panel h2 {
-            color: #00ff88;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-            letter-spacing: 1px;
-        }
-
+        .info-panel h2 { color: #00ff88; font-size: 0.9rem; margin-bottom: 12px; }
         .manos-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
         }
-
         .mano-card {
             background: #0f0f0f;
             border-radius: 8px;
@@ -118,47 +93,13 @@
             border: 1px solid #333;
             text-align: center;
         }
-
-        .mano-card .lado {
-            font-size: 0.75rem;
-            color: #00bfff;
-            margin-bottom: 6px;
-        }
-
-        .mano-card .seña {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        .mano-card .confianza {
-            font-size: 0.75rem;
-            color: #aaa;
-            margin-top: 4px;
-        }
-
-        .barra {
-            width: 100%;
-            background: #333;
-            border-radius: 10px;
-            height: 6px;
-            margin-top: 8px;
-        }
-
-        .barra-fill {
-            height: 6px;
-            background: #00ff88;
-            border-radius: 10px;
-            transition: width 0.3s;
-        }
-
-        footer {
-            margin-top: auto;
-            padding: 16px;
-            color: #555;
-            font-size: 0.75rem;
-            text-align: center;
-        }
+        .mano-card .lado { font-size: 0.75rem; color: #00bfff; margin-bottom: 6px; }
+        .mano-card .seña { font-size: 1.3rem; font-weight: bold; color: white; }
+        .mano-card .confianza { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
+        .barra { width: 100%; background: #333; border-radius: 10px; height: 6px; margin-top: 8px; }
+        .barra-fill { height: 6px; background: #00ff88; border-radius: 10px; transition: width 0.3s; }
+        footer { margin-top: auto; padding: 16px; color: #555; font-size: 0.75rem; text-align: center; }
+        video { display: none; }
     </style>
 </head>
 <body>
@@ -169,9 +110,9 @@
 </header>
 
 <div class="container">
-
     <div class="camara-box">
-        <img src="/video" alt="Camara en vivo">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
         <div class="live-badge">EN VIVO</div>
     </div>
 
@@ -192,40 +133,122 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <footer>Proyecto de Titulación — Traductor LSM con IA</footer>
 
 <script>
-    // Actualizar info de detección cada 500ms
-    setInterval(() => {
-        fetch('/deteccion')
-            .then(r => r.json())
-            .then(data => {
-                // Izquierda
-                if (data.izquierda) {
-                    document.getElementById('seña-izq').textContent = data.izquierda.seña;
-                    document.getElementById('conf-izq').textContent = data.izquierda.confianza + '%';
-                    document.getElementById('barra-izq').style.width = data.izquierda.confianza + '%';
-                } else {
-                    document.getElementById('seña-izq').textContent = '—';
-                    document.getElementById('conf-izq').textContent = 'Sin detección';
-                    document.getElementById('barra-izq').style.width = '0%';
-                }
-                // Derecha
-                if (data.derecha) {
-                    document.getElementById('seña-der').textContent = data.derecha.seña;
-                    document.getElementById('conf-der').textContent = data.derecha.confianza + '%';
-                    document.getElementById('barra-der').style.width = data.derecha.confianza + '%';
-                } else {
-                    document.getElementById('seña-der').textContent = '—';
-                    document.getElementById('conf-der').textContent = 'Sin detección';
-                    document.getElementById('barra-der').style.width = '0%';
-                }
-            });
-    }, 500);
-</script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
+const hands = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+});
+
+hands.onResults(async (results) => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(results.image, 0, 0);
+
+    const payload = { izquierda: null, derecha: null };
+
+    if (results.multiHandLandmarks && results.multiHandedness) {
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+            const lm = results.multiHandLandmarks[i];
+            const lado = results.multiHandedness[i].label;
+
+            // Dibujar mano
+            drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#00ff88', lineWidth: 2});
+            drawLandmarks(ctx, lm, {color: '#ffffff', lineWidth: 1, radius: 3});
+
+            // Bounding box
+            const xs = lm.map(p => p.x * canvas.width);
+            const ys = lm.map(p => p.y * canvas.height);
+            const x1 = Math.max(0, Math.min(...xs) - 20);
+            const y1 = Math.max(0, Math.min(...ys) - 20);
+            const x2 = Math.min(canvas.width, Math.max(...xs) + 20);
+            const y2 = Math.min(canvas.height, Math.max(...ys) + 20);
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            // Landmarks planos para enviar
+            const flat = lm.flatMap(p => [p.x, p.y, p.z]);
+            // MediaPipe en JS: Left = mano derecha real (espejado)
+            if (lado === 'Left') payload.derecha = flat;
+            else payload.izquierda = flat;
+        }
+    }
+
+    // Enviar al servidor
+    try {
+        const res = await fetch('/predecir', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        // Izquierda
+        if (data.izquierda) {
+            document.getElementById('seña-izq').textContent = data.izquierda.seña;
+            document.getElementById('conf-izq').textContent = data.izquierda.confianza + '%';
+            document.getElementById('barra-izq').style.width = data.izquierda.confianza + '%';
+
+            // Etiqueta en canvas
+            const lm = results.multiHandLandmarks.find((_, i) => results.multiHandedness[i].label === 'Right');
+            if (lm) dibujarEtiqueta(lm, data.izquierda.seña, data.izquierda.confianza);
+        } else {
+            document.getElementById('seña-izq').textContent = '—';
+            document.getElementById('conf-izq').textContent = 'Sin detección';
+            document.getElementById('barra-izq').style.width = '0%';
+        }
+
+        // Derecha
+        if (data.derecha) {
+            document.getElementById('seña-der').textContent = data.derecha.seña;
+            document.getElementById('conf-der').textContent = data.derecha.confianza + '%';
+            document.getElementById('barra-der').style.width = data.derecha.confianza + '%';
+        } else {
+            document.getElementById('seña-der').textContent = '—';
+            document.getElementById('conf-der').textContent = 'Sin detección';
+            document.getElementById('barra-der').style.width = '0%';
+        }
+    } catch(e) {}
+});
+
+function dibujarEtiqueta(lm, seña, confianza) {
+    const xs = lm.map(p => p.x * canvas.width);
+    const ys = lm.map(p => p.y * canvas.height);
+    const x1 = Math.max(0, Math.min(...xs) - 20);
+    const y1 = Math.max(0, Math.min(...ys) - 20);
+    const texto = `${seña}: ${confianza}%`;
+    ctx.font = 'bold 16px Segoe UI';
+    const tw = ctx.measureText(texto).width;
+    ctx.fillStyle = '#00ff88';
+    ctx.fillRect(x1, y1 - 26, tw + 10, 24);
+    ctx.fillStyle = '#000';
+    ctx.fillText(texto, x1 + 5, y1 - 8);
+}
+
+// Iniciar cámara
+navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false})
+    .then(stream => {
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+            const camera = new Camera(video, {
+                onFrame: async () => { await hands.send({image: video}); },
+                width: 640, height: 480
+            });
+            camera.start();
+        };
+    });
+</script>
 </body>
 </html>
