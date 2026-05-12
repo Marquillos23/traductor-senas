@@ -1,10 +1,9 @@
 FROM python:3.11-slim
 
+# Instalar librerías del sistema que necesita mediapipe
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libgl1 \
-    libxcb1 \
-    libx11-6 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -13,4 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD python 4_app_web.py
+CMD ["python", "4_app_web.py"]
