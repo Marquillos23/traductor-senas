@@ -271,8 +271,8 @@ navigator.mediaDevices.getUserMedia({
     });
     camera.start();
     status.textContent = '👀 Buscando manos...';
-}).catch(() => {
-    status.textContent = '❌ No se pudo acceder a la cámara';
+}).catch((err) => {
+    status.textContent = '❌ Error: ' + err.name + ' - ' + err.message;
 });
 </script>
 
