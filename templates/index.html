@@ -130,7 +130,6 @@
     </div>
 </div>
 
-<footer>Proyecto de Titulación — Traductor LSM con IA</footer>
 
 <!-- MediaPipe Hands -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
@@ -145,7 +144,7 @@ const status = document.getElementById('status');
 
 let procesando = false;
 let ultimoProceso = 0;
-const INTERVALO_MS = 300;
+const INTERVALO_MS = 800;
 
 const hands = new Hands({
     locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
@@ -263,7 +262,7 @@ navigator.mediaDevices.getUserMedia({
         if (video.readyState >= 2) {
             await hands.send({image: video});
         }
-        setTimeout(loop, INTERVALO_MS);
+        setTimeout(loop, 500);
     }
     loop();
 }).catch((err) => {
