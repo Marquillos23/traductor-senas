@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Traductor de Señas</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -18,20 +18,20 @@
         header {
             width: 100%;
             background: #1a1a2e;
-            padding: 16px;
+            padding: 14px;
             text-align: center;
             border-bottom: 2px solid #00ff88;
         }
-        header h1 { font-size: 1.5rem; color: #00ff88; letter-spacing: 2px; }
-        header p { font-size: 0.8rem; color: #aaa; margin-top: 4px; }
+        header h1 { font-size: 1.3rem; color: #00ff88; letter-spacing: 2px; }
+        header p { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
         .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 16px;
-            gap: 16px;
+            padding: 12px;
+            gap: 12px;
             width: 100%;
-            max-width: 640px;
+            max-width: 480px;
         }
         .camara-box {
             position: relative;
@@ -39,75 +39,67 @@
             border-radius: 12px;
             overflow: hidden;
             width: 100%;
-            box-shadow: 0 0 30px rgba(0,255,136,0.2);
+            box-shadow: 0 0 20px rgba(0,255,136,0.2);
         }
         canvas { width: 100%; display: block; }
+        video { display: none; }
         .live-badge {
             position: absolute;
-            top: 12px; left: 12px;
+            top: 10px; left: 10px;
             background: red;
             color: white;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: bold;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 20px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
         .live-badge::before {
             content: '';
-            width: 8px; height: 8px;
+            width: 7px; height: 7px;
             background: white;
             border-radius: 50%;
             animation: parpadeo 1s infinite;
         }
         @keyframes parpadeo {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+            0%, 100% { opacity: 1; } 50% { opacity: 0; }
         }
-        .fps-control {
-            width: 100%;
-            background: #1a1a2e;
-            border-radius: 12px;
-            padding: 12px 16px;
-            border: 1px solid #333;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .status {
+            font-size: 0.75rem;
+            color: #aaa;
+            text-align: center;
         }
-        .fps-control label { font-size: 0.85rem; color: #aaa; white-space: nowrap; }
-        .fps-control input { flex: 1; accent-color: #00ff88; }
-        .fps-control span { color: #00ff88; font-weight: bold; min-width: 40px; }
         .info-panel {
             width: 100%;
             background: #1a1a2e;
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px;
             border: 1px solid #333;
         }
-        .info-panel h2 { color: #00ff88; font-size: 0.9rem; margin-bottom: 12px; }
-        .manos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .info-panel h2 { color: #00ff88; font-size: 0.85rem; margin-bottom: 10px; }
+        .manos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .mano-card {
             background: #0f0f0f;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #333;
             text-align: center;
         }
-        .mano-card .lado { font-size: 0.75rem; color: #00bfff; margin-bottom: 6px; }
-        .mano-card .seña { font-size: 1.3rem; font-weight: bold; color: white; }
-        .mano-card .confianza { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
-        .barra { width: 100%; background: #333; border-radius: 10px; height: 6px; margin-top: 8px; }
-        .barra-fill { height: 6px; background: #00ff88; border-radius: 10px; transition: width 0.3s; }
-        footer { padding: 16px; color: #555; font-size: 0.75rem; text-align: center; }
-        video { display: none; }
+        .mano-card .lado { font-size: 0.7rem; color: #00bfff; margin-bottom: 5px; }
+        .mano-card .seña { font-size: 1.2rem; font-weight: bold; }
+        .mano-card .confianza { font-size: 0.7rem; color: #aaa; margin-top: 3px; }
+        .barra { width: 100%; background: #333; border-radius: 10px; height: 5px; margin-top: 6px; }
+        .barra-fill { height: 5px; background: #00ff88; border-radius: 10px; transition: width 0.3s; }
+        footer { padding: 14px; color: #555; font-size: 0.7rem; text-align: center; }
     </style>
 </head>
 <body>
+
 <header>
     <h1>TRADUCTOR DE SEÑAS</h1>
-    <p>Detección  de señas en tiempo real con IA</p>
+    <p>Detección en tiempo real con IA</p>
 </header>
 
 <div class="container">
@@ -117,11 +109,7 @@
         <div class="live-badge">EN VIVO</div>
     </div>
 
-    <div class="fps-control">
-        <label>⚡ Velocidad:</label>
-        <input type="range" id="fps-slider" min="2" max="15" value="6">
-        <span id="fps-label">6 fps</span>
-    </div>
+    <p class="status" id="status">Cargando MediaPipe...</p>
 
     <div class="info-panel">
         <h2>📊 DETECCIÓN ACTUAL</h2>
@@ -144,107 +132,130 @@
 
 <footer>Proyecto de Titulación — Traductor LSM con IA</footer>
 
+<!-- MediaPipe Hands -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248257/camera_utils.js"></script>
+
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const slider = document.getElementById('fps-slider');
-const fpsLabel = document.getElementById('fps-label');
+const status = document.getElementById('status');
 
-let fps = 6;
-slider.addEventListener('input', () => {
-    fps = parseInt(slider.value);
-    fpsLabel.textContent = fps + ' fps';
+let procesando = false;
+let ultimoProceso = 0;
+const INTERVALO_MS = 300; // ~3 fps al servidor, fluido en pantalla
+
+const hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
 });
 
-const CONEXIONES = [
-    [0,1],[1,2],[2,3],[3,4],
-    [0,5],[5,6],[6,7],[7,8],
-    [0,9],[9,10],[10,11],[11,12],
-    [0,13],[13,14],[14,15],[15,16],
-    [0,17],[17,18],[18,19],[19,20],
-    [5,9],[9,13],[13,17]
-];
+hands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 0,
+    minDetectionConfidence: 0.6,
+    minTrackingConfidence: 0.5
+});
 
-function dibujarMano(landmarks) {
-    const w = canvas.width, h = canvas.height;
-    const puntos = landmarks.map(p => [p[0] * w, p[1] * h]);
-    ctx.strokeStyle = '#00ff88';
-    ctx.lineWidth = 2;
-    for (const [a, b] of CONEXIONES) {
-        ctx.beginPath();
-        ctx.moveTo(puntos[a][0], puntos[a][1]);
-        ctx.lineTo(puntos[b][0], puntos[b][1]);
-        ctx.stroke();
+hands.onResults(async (results) => {
+    // Dibujar video
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+    const ahora = Date.now();
+    const payload = { izquierda: null, derecha: null };
+    let hayManos = false;
+
+    if (results.multiHandLandmarks && results.multiHandedness) {
+        hayManos = true;
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+            const lm = results.multiHandLandmarks[i];
+            const label = results.multiHandedness[i].label;
+
+            // Dibujar mano
+            drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#00ff88', lineWidth: 2});
+            drawLandmarks(ctx, lm, {color: '#ffffff', radius: 3});
+
+            // Bounding box
+            const w = canvas.width, h = canvas.height;
+            const xs = lm.map(p => p.x * w);
+            const ys = lm.map(p => p.y * h);
+            const x1 = Math.max(0, Math.min(...xs) - 15);
+            const y1 = Math.max(0, Math.min(...ys) - 15);
+            const x2 = Math.min(w, Math.max(...xs) + 15);
+            const y2 = Math.min(h, Math.max(...ys) + 15);
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+            // Landmarks planos
+            const flat = lm.flatMap(p => [p.x, p.y, p.z]);
+            // MediaPipe JS devuelve etiquetas espejadas
+            if (label === 'Left') payload.derecha = flat;
+            else payload.izquierda = flat;
+        }
     }
-    ctx.fillStyle = '#ffffff';
-    for (const [x, y] of puntos) {
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
+
+    status.textContent = hayManos ? '✅ Mano detectada' : '👀 Buscando manos...';
+
+    // Enviar al servidor cada INTERVALO_MS
+    if (!procesando && ahora - ultimoProceso > INTERVALO_MS && hayManos) {
+        procesando = true;
+        ultimoProceso = ahora;
+        try {
+            const res = await fetch('/predecir', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            actualizarPanel('izquierda', data.izquierda, payload.izquierda);
+            actualizarPanel('derecha', data.derecha, payload.derecha);
+
+            // Dibujar etiquetas encima del bbox
+            if (results.multiHandLandmarks) {
+                for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+                    const lm = results.multiHandLandmarks[i];
+                    const label = results.multiHandedness[i].label;
+                    const lado = label === 'Left' ? 'derecha' : 'izquierda';
+                    const info = data[lado];
+                    if (info) {
+                        const w = canvas.width, h = canvas.height;
+                        const xs = lm.map(p => p.x * w);
+                        const ys = lm.map(p => p.y * h);
+                        const x1 = Math.max(0, Math.min(...xs) - 15);
+                        const y1 = Math.max(0, Math.min(...ys) - 15);
+                        const texto = `${info.seña}: ${info.confianza}%`;
+                        ctx.font = 'bold 14px Segoe UI';
+                        const tw = ctx.measureText(texto).width;
+                        ctx.fillStyle = '#00ff88';
+                        ctx.fillRect(x1, y1 - 22, tw + 10, 20);
+                        ctx.fillStyle = '#000';
+                        ctx.fillText(texto, x1 + 5, y1 - 7);
+                    }
+                }
+            }
+        } catch(e) {
+            status.textContent = '⚠️ Error de conexión';
+        }
+        procesando = false;
     }
-}
+});
 
-function dibujarBbox(bbox, seña, confianza) {
-    ctx.strokeStyle = '#00ff88';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(bbox.x1, bbox.y1, bbox.x2 - bbox.x1, bbox.y2 - bbox.y1);
-    const texto = `${seña}: ${confianza}%`;
-    ctx.font = 'bold 14px Segoe UI';
-    const tw = ctx.measureText(texto).width;
-    ctx.fillStyle = '#00ff88';
-    ctx.fillRect(bbox.x1, bbox.y1 - 24, tw + 10, 22);
-    ctx.fillStyle = '#000';
-    ctx.fillText(texto, bbox.x1 + 5, bbox.y1 - 7);
-}
-
-function actualizarPanel(lado, info) {
+function actualizarPanel(lado, info, tieneData) {
     const sufijo = lado === 'izquierda' ? 'izq' : 'der';
     if (info) {
         document.getElementById(`seña-${sufijo}`).textContent = info.seña;
         document.getElementById(`conf-${sufijo}`).textContent = info.confianza + '%';
         document.getElementById(`barra-${sufijo}`).style.width = info.confianza + '%';
-    } else {
+    } else if (!tieneData) {
         document.getElementById(`seña-${sufijo}`).textContent = '—';
         document.getElementById(`conf-${sufijo}`).textContent = 'Sin detección';
         document.getElementById(`barra-${sufijo}`).style.width = '0%';
     }
-}
-
-let procesando = false;
-
-async function procesarFrame() {
-    if (procesando || video.readyState < 2) return;
-    procesando = true;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-
-    // Comprimir frame al 40% de calidad para reducir datos enviados
-    const frameB64 = canvas.toDataURL('image/jpeg', 0.4).split(',')[1];
-
-    try {
-        const res = await fetch('/predecir', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({frame: frameB64})
-        });
-        const data = await res.json();
-
-        // Redibujar frame
-        ctx.drawImage(video, 0, 0);
-
-        for (const lado of ['izquierda', 'derecha']) {
-            if (data[lado]) {
-                dibujarMano(data[lado].landmarks);
-                dibujarBbox(data[lado].bbox, data[lado].seña, data[lado].confianza);
-            }
-            actualizarPanel(lado, data[lado]);
-        }
-    } catch(e) {}
-
-    procesando = false;
 }
 
 // Iniciar cámara
@@ -253,14 +264,17 @@ navigator.mediaDevices.getUserMedia({
     audio: false
 }).then(stream => {
     video.srcObject = stream;
-    video.play();
-    setInterval(() => procesarFrame(), 1000 / fps);
-    // Actualizar intervalo cuando cambia el slider
-    slider.addEventListener('change', () => {
-        clearInterval(window._loop);
-        window._loop = setInterval(() => procesarFrame(), 1000 / fps);
+    status.textContent = '✅ Cámara lista';
+    const camera = new Camera(video, {
+        onFrame: async () => { await hands.send({image: video}); },
+        width: 320, height: 240
     });
+    camera.start();
+    status.textContent = '👀 Buscando manos...';
+}).catch(() => {
+    status.textContent = '❌ No se pudo acceder a la cámara';
 });
 </script>
+
 </body>
 </html>
