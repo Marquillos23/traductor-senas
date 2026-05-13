@@ -145,7 +145,7 @@ const status = document.getElementById('status');
 
 let procesando = false;
 let ultimoProceso = 0;
-const INTERVALO_MS = 300; // ~3 fps al servidor, fluido en pantalla
+const INTERVALO_MS = 300;
 
 const hands = new Hands({
     locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
@@ -159,7 +159,6 @@ hands.setOptions({
 });
 
 hands.onResults(async (results) => {
-    // Dibujar video
     canvas.width = video.videoWidth || 320;
     canvas.height = video.videoHeight || 240;
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
@@ -174,11 +173,9 @@ hands.onResults(async (results) => {
             const lm = results.multiHandLandmarks[i];
             const label = results.multiHandedness[i].label;
 
-            // Dibujar mano
             drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#00ff88', lineWidth: 2});
             drawLandmarks(ctx, lm, {color: '#ffffff', radius: 3});
 
-            // Bounding box
             const w = canvas.width, h = canvas.height;
             const xs = lm.map(p => p.x * w);
             const ys = lm.map(p => p.y * h);
@@ -190,9 +187,7 @@ hands.onResults(async (results) => {
             ctx.lineWidth = 2;
             ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-            // Landmarks planos
             const flat = lm.flatMap(p => [p.x, p.y, p.z]);
-            // MediaPipe JS devuelve etiquetas espejadas
             if (label === 'Left') payload.derecha = flat;
             else payload.izquierda = flat;
         }
@@ -200,7 +195,6 @@ hands.onResults(async (results) => {
 
     status.textContent = hayManos ? '✅ Mano detectada' : '👀 Buscando manos...';
 
-    // Enviar al servidor cada INTERVALO_MS
     if (!procesando && ahora - ultimoProceso > INTERVALO_MS && hayManos) {
         procesando = true;
         ultimoProceso = ahora;
@@ -211,11 +205,9 @@ hands.onResults(async (results) => {
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-
             actualizarPanel('izquierda', data.izquierda, payload.izquierda);
             actualizarPanel('derecha', data.derecha, payload.derecha);
 
-            // Dibujar etiquetas encima del bbox
             if (results.multiHandLandmarks) {
                 for (let i = 0; i < results.multiHandLandmarks.length; i++) {
                     const lm = results.multiHandLandmarks[i];
@@ -239,7 +231,7 @@ hands.onResults(async (results) => {
                 }
             }
         } catch(e) {
-            status.textContent = '⚠️ Error de conexión';
+            status.textContent = '⚠️ Error: ' + e.message;
         }
         procesando = false;
     }
@@ -258,19 +250,22 @@ function actualizarPanel(lado, info, tieneData) {
     }
 }
 
-// Iniciar cámara
+// Iniciar cámara sin usar Camera de MediaPipe
 navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'user', width: {ideal: 320}, height: {ideal: 240} },
     audio: false
 }).then(stream => {
     video.srcObject = stream;
-    status.textContent = '✅ Cámara lista';
-    const camera = new Camera(video, {
-        onFrame: async () => { await hands.send({image: video}); },
-        width: 320, height: 240
-    });
-    camera.start();
+    video.play();
     status.textContent = '👀 Buscando manos...';
+
+    async function loop() {
+        if (video.readyState >= 2) {
+            await hands.send({image: video});
+        }
+        setTimeout(loop, INTERVALO_MS);
+    }
+    loop();
 }).catch((err) => {
     status.textContent = '❌ Error: ' + err.name + ' - ' + err.message;
 });
